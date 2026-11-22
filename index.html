@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bazaar Hotline — ₹2.00 Jackpot Fruit Machine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,600;0,700;1,700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* Custom Retro Arcade & Bazaar Styling */
+        :root {
+            --cabinet-gold: #f59e0b;
+            --cabinet-red: #dc2626;
+            --cabinet-teal: #0d9488;
+            --cabinet-dark: #111827;
+            --bulb-off: #451a03;
+            --bulb-on: #fef08a;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at center, #2e1065 0%, #0f172a 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .arcade-font {
+            font-family: 'Chakra Petch', sans-serif;
+        }
+
+        /* Metallic Cabinet Bevel & Shadows */
+        .cabinet-shell {
+            background: linear-gradient(145deg, #b91c1c 0%, #7f1d1d 45%, #450a0a 100%);
+            border: 6px solid #f59e0b;
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.85),
+                inset 0 2px 15px rgba(255, 255, 255, 0.3),
+                0 0 35px rgba(245, 158, 11, 0.35);
+        }
+
+        .inner-bezel {
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            border: 4px solid #d97706;
+            box-shadow: inset 0 6px 20px rgba(0, 0, 0, 0.9);
+        }
+
+        /* Marquee Bulbs */
+        .marquee-bulb {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--bulb-off);
+            border: 1.5px solid #92400e;
+            transition: all 0.15s ease;
+        }
+
+        .marquee-bulb.lit {
+            background-color: var(--bulb-on);
+            box-shadow: 0 0 10px #fde047, 0 0 20px #f59e0b;
+            border-color: #ffffff;
+        }
+
+        /* Reel Window & Glass Reflection */
+        .reel-viewport {
+            height: 228px; /* Shows 3 symbols (76px each) */
+            background: linear-gradient(180deg, 
+                #cbd5e1 0%, 
+                #ffffff 18%, 
+                #ffffff 82%, 
+                #94a3b8 100%);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                inset 0 14px 18px -6px rgba(15, 23, 42, 0.75),
+                inset 0 -14px 18px -6px rgba(15, 23, 42, 0.75),
+                0 0 0 3px #f59e0b;
+        }
+
+        /* Payline Center Indicator */
+        .payline-bar {
+            position: absolute;
+            top: 76px;
+            left: 0;
+            right: 0;
+            height: 76px;
+            border-top: 3px solid rgba(220, 38, 38, 0.85);
+            border-bottom: 3px solid rgba(220, 38, 38, 0.85);
+            background: rgba(254, 240, 138, 0.18);
+            pointer-events: none;
+            z-index: 20;
+            box-shadow: inset 0 0 12px rgba(245, 158, 11, 0.4);
+        }
+
+        .reel-strip {
+            display: flex;
+            flex-direction: column;
+            will-change: transform;
+        }
+
+        .reel-cell {
+            height: 76px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            border-bottom: 1px dashed rgba(148, 163, 184, 0.35);
+            padding: 4px;
+        }
+
+        .reel-blur {
+            filter: blur(2.5px);
+        }
+
+        /* Physical Arcade Buttons */
+        .arcade-btn {
+            position: relative;
+            transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.15s ease;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .arcade-btn:active:not(:disabled) {
+            transform: translateY(4px);
+        }
+
+        .arcade-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            filter: grayscale(0.6);
+        }
+
+        .btn-hold {
+            background: linear-gradient(180deg, #ef4444 0%, #991b1b 100%);
+            border: 2px solid #fca5a5;
+            box-shadow: 0 5px 0 #450a0a, 0 8px 15px rgba(0,0,0,0.5);
+        }
+
+        .btn-hold.active-hold {
+            background: linear-gradient(180deg, #fde047 0%, #eab308 100%);
+            color: #422006;
+            border-color: #ffffff;
+            box-shadow: 0 5px 0 #854d0e, 0 0 20px rgba(250, 204, 21, 0.85);
+            animation: pulseGlow 0.9s infinite alternate;
+        }
+
+        .btn-hold.held-locked {
+            background: linear-gradient(180deg, #22c55e 0%, #15803d 100%);
+            color: #ffffff;
+            border-color: #bbf7d0;
+            box-shadow: 0 3px 0 #052e16, 0 0 15px rgba(34, 197, 94, 0.7);
+            transform: translateY(2px);
+        }
+
+        .btn-nudge {
+            background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+            border: 2px solid #bae6fd;
+            box-shadow: 0 5px 0 #0c4a6e, 0 8px 15px rgba(0,0,0,0.5);
+        }
+
+        .btn-nudge.active-nudge {
+            animation: pulseBlue 0.85s infinite alternate;
+        }
+
+        .btn-spin {
+            background: linear-gradient(180deg, #22c55e 0%, #16a34a 55%, #15803d 100%);
+            border: 3px solid #bbf7d0;
+            box-shadow: 0 7px 0 #052e16, 0 12px 24px rgba(0,0,0,0.65);
+        }
+
+        .btn-spin:active:not(:disabled) {
+            box-shadow: 0 2px 0 #052e16, 0 4px 10px rgba(0,0,0,0.65);
+        }
+
+        @keyframes pulseGlow {
+            from { box-shadow: 0 5px 0 #854d0e, 0 0 8px rgba(250, 204, 21, 0.5); }
+            to { box-shadow: 0 5px 0 #854d0e, 0 0 24px rgba(250, 204, 21, 1); }
+        }
+
+        @keyframes pulseBlue {
+            from { box-shadow: 0 5px 0 #0c4a6e, 0 0 8px rgba(56, 189, 248, 0.4); }
+            to { box-shadow: 0 5px 0 #0c4a6e, 0 0 22px rgba(56, 189, 248, 0.95); }
+        }
+
+        /* Digital LED Readout */
+        .led-display {
+            background: #090d16;
+            border: 2px solid #334155;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.95);
+            font-family: 'Chakra Petch', monospace;
+            text-shadow: 0 0 8px currentColor;
+        }
+
+        /* Jackpot Banner Animation */
+        @keyframes jackpotPop {
+            0% { transform: scale(0.8); opacity: 0; }
+            60% { transform: scale(1.06); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .win-banner-anim {
+            animation: jackpotPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center p-2 sm:p-4 md:p-6">
+
+    <!-- Main Arcade Cabinet Container -->
+    <main class="cabinet-shell w-full max-w-xl rounded-3xl p-3 sm:p-5 relative">
+        
+        <!-- Top Marquee Lights Row -->
+        <div id="marquee-top" class="flex justify-between items-center px-3 py-1.5 mb-2 bg-amber-950/60 rounded-full border border-amber-500/40">
+            <!-- Bulbs populated by JS -->
+        </div>
+
+        <!-- Header / Marquee Signboard -->
+        <header class="inner-bezel rounded-2xl p-3 sm:p-4 mb-3 text-center relative overflow-hidden">
+            <div class="flex items-center justify-between gap-2 mb-1">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-600/30 text-teal-300 border border-teal-400/40">
+                    <!-- Retro Telephone SVG -->
+                    <svg class="w-3.5 h-3.5 text-amber-300" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.07 21 3 13.93 3 5a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.46.57 3.58a1 1 0 01-.25 1.01l-2.2 2.2z"/>
+                    </svg>
+                    HOTLINE #404
+                </span>
+
+                <span class="arcade-font text-xs sm:text-sm font-bold uppercase tracking-wider text-amber-300 bg-red-950/80 px-2.5 py-0.5 rounded-full border border-amber-400/50">
+                    10p PER SPIN
+                </span>
+
+                <!-- Audio Toggle Button -->
+                <button id="mute-btn" type="button" aria-label="Toggle Sound" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-amber-300 transition">
+                    <svg id="icon-sound-on" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                        <path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                    </svg>
+                    <svg id="icon-sound-off" class="w-4 h-4 hidden text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                        <path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
+                    </svg>
+                </button>
+            </div>
+
+            <h1 class="arcade-font text-2xl sm:text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 via-amber-400 to-orange-500 drop-shadow">
+                BAZAAR HOTLINE
+            </h1>
+            <p class="text-xs sm:text-sm text-amber-100/90 font-medium mt-0.5">
+                "Please Hold the Line for Your <span class="text-yellow-300 font-bold">₹2.00</span> Tech-Support Jackpot!"
+            </p>
+        </header>
+
+        <!-- Paytable Strip (Compact & Clear in Paise & Rupees) -->
+        <section aria-label="Paytable" class="inner-bezel rounded-2xl p-2.5 sm:p-3 mb-3">
+            <div class="flex items-center justify-between mb-2 px-1">
+                <span class="arcade-font text-xs font-bold uppercase tracking-wider text-amber-400">3-of-a-Kind Paytable</span>
+                <span class="text-[11px] text-teal-300 font-semibold">100 Paise = ₹1.00</span>
+            </div>
+            <div id="paytable-grid" class="grid grid-cols-3 sm:grid-cols-6 gap-1.5 text-center">
+                <!-- Populated dynamically from SYMBOLS config -->
+            </div>
+        </section>
+
+        <!-- Digital Status & Ticker Display -->
+        <div class="led-display rounded-xl px-3 py-2 mb-3 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 overflow-hidden">
+                <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping flex-shrink-0"></span>
+                <p id="status-message" class="text-xs sm:text-sm font-bold text-amber-300 truncate">
+                    WELCOME! PRESS SPIN (10p) TO CONNECT!
+                </p>
+            </div>
+            <div id="nudge-badge" class="hidden flex-shrink-0 px-2 py-0.5 rounded bg-sky-500/20 border border-sky-400 text-sky-300 text-xs font-bold">
+                NUDGES: <span id="nudge-count">0</span>
+            </div>
+        </div>
+
+        <!-- Reels & Win Overlay Frame -->
+        <section class="inner-bezel rounded-2xl p-3 sm:p-4 mb-3 relative">
+            <!-- Payline Arrows -->
+            <div class="flex items-center justify-between gap-2 sm:gap-3 relative">
+                <!-- Left Payline Pointer -->
+                <div class="hidden xs:flex sm:flex items-center justify-center text-red-500 drop-shadow">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                </div>
+
+                <!-- 3 Reels Grid -->
+                <div class="grid grid-cols-3 gap-2 sm:gap-3 w-full relative">
+                    <!-- Payline Highlight Overlay across all 3 reels -->
+                    <div class="payline-bar rounded-lg"></div>
+
+                    <!-- Reel 0 -->
+                    <div class="reel-viewport" id="viewport-0">
+                        <div class="reel-strip" id="strip-0"></div>
+                    </div>
+
+                    <!-- Reel 1 -->
+                    <div class="reel-viewport" id="viewport-1">
+                        <div class="reel-strip" id="strip-1"></div>
+                    </div>
+
+                    <!-- Reel 2 -->
+                    <div class="reel-viewport" id="viewport-2">
+                        <div class="reel-strip" id="strip-2"></div>
+                    </div>
+                </div>
+
+                <!-- Right Payline Pointer -->
+                <div class="hidden xs:flex sm:flex items-center justify-center text-red-500 drop-shadow">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M16 5v14L5 12z"/></svg>
+                </div>
+            </div>
+
+            <!-- Celebration Win Overlay Banner -->
+            <div id="win-overlay" class="hidden absolute inset-2 z-30 rounded-xl bg-gradient-to-br from-amber-500/95 via-red-600/95 to-purple-900/95 border-4 border-yellow-200 flex flex-col items-center justify-center text-center p-4 shadow-2xl win-banner-anim">
+                <div class="text-xs sm:text-sm font-extrabold uppercase tracking-widest text-yellow-200 bg-black/40 px-3 py-1 rounded-full mb-1">
+                    ★ CALL CONNECTED — WINNER! ★
+                </div>
+                <h2 id="win-title" class="arcade-font text-2xl sm:text-4xl font-black text-white drop-shadow-md">
+                    JACKPOT! ₹2.00
+                </h2>
+                <p id="win-subtitle" class="text-xs sm:text-sm font-semibold text-yellow-100 mt-1 mb-3">
+                    3x Tuk Tuk Tech-Support Grand Prize!
+                </p>
+                <button id="collect-btn" type="button" class="arcade-btn px-5 py-2 rounded-xl bg-yellow-300 hover:bg-yellow-200 text-red-950 font-extrabold text-sm uppercase tracking-wider shadow-lg border-2 border-white">
+                    Collect Prize & Continue
+                </button>
+            </div>
+        </section>
+
+        <!-- HOLD & NUDGE Controls (Under Each Reel) -->
+        <section aria-label="Reel Hold and Nudge Controls" class="grid grid-cols-3 gap-2 sm:gap-3 mb-4 px-1 sm:px-6">
+            <!-- Reel 1 Controls -->
+            <div class="flex flex-col gap-2">
+                <button id="hold-0" type="button" disabled class="arcade-btn btn-hold w-full py-2.5 rounded-xl arcade-font font-bold text-xs sm:text-sm uppercase tracking-wider text-white">
+                    HOLD 1
+                </button>
+                <button id="nudge-0" type="button" disabled class="arcade-btn btn-nudge w-full py-2 rounded-xl arcade-font font-bold text-xs uppercase tracking-wider text-white">
+                    NUDGE ▼
+                </button>
+            </div>
+
+            <!-- Reel 2 Controls -->
+            <div class="flex flex-col gap-2">
+                <button id="hold-1" type="button" disabled class="arcade-btn btn-hold w-full py-2.5 rounded-xl arcade-font font-bold text-xs sm:text-sm uppercase tracking-wider text-white">
+                    HOLD 2
+                </button>
+                <button id="nudge-1" type="button" disabled class="arcade-btn btn-nudge w-full py-2 rounded-xl arcade-font font-bold text-xs uppercase tracking-wider text-white">
+                    NUDGE ▼
+                </button>
+            </div>
+
+            <!-- Reel 3 Controls -->
+            <div class="flex flex-col gap-2">
+                <button id="hold-2" type="button" disabled class="arcade-btn btn-hold w-full py-2.5 rounded-xl arcade-font font-bold text-xs sm:text-sm uppercase tracking-wider text-white">
+                    HOLD 3
+                </button>
+                <button id="nudge-2" type="button" disabled class="arcade-btn btn-nudge w-full py-2 rounded-xl arcade-font font-bold text-xs uppercase tracking-wider text-white">
+                    NUDGE ▼
+                </button>
+            </div>
+        </section>
+
+        <!-- Bottom Console: Balance Meters, Top Up & Main SPIN Button -->
+        <section class="inner-bezel rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            
+            <!-- Meters + Top Up -->
+            <div class="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
+                <!-- Credit Balance -->
+                <div class="led-display rounded-xl px-3 py-2 text-center min-w-[105px]">
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Balance</div>
+                    <div id="balance-display" class="text-xl sm:text-2xl font-bold text-emerald-400">₹1.00</div>
+                    <div id="paise-sub" class="text-[10px] text-emerald-300/75">(100 paise)</div>
+                </div>
+
+                <!-- Last Win Meter -->
+                <div class="led-display rounded-xl px-3 py-2 text-center min-w-[95px]">
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Last Win</div>
+                    <div id="win-display" class="text-xl sm:text-2xl font-bold text-amber-400">₹0.00</div>
+                    <div class="text-[10px] text-amber-300/75">MAX ₹2.00</div>
+                </div>
+
+                <!-- Free Top-Up Button -->
+                <button id="topup-btn" type="button" class="arcade-btn px-3 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs uppercase leading-tight border-2 border-amber-200 shadow-md">
+                    + ₹1.00<br><span class="text-[10px] font-bold">Top Up</span>
+                </button>
+            </div>
+
+            <!-- Main SPIN Button -->
+            <button id="spin-btn" type="button" class="arcade-btn btn-spin w-full sm:w-auto sm:min-w-[155px] py-3.5 px-6 rounded-2xl arcade-font text-xl sm:text-2xl font-black uppercase tracking-wider text-white flex flex-col items-center justify-center">
+                <span>SPIN</span>
+                <span class="text-[11px] font-sans font-bold text-emerald-100 tracking-normal">Cost: 10p (₹0.10)</span>
+            </button>
+        </section>
+
+        <!-- Bottom Marquee Lights Row -->
+        <div id="marquee-bottom" class="flex justify-between items-center px-3 py-1.5 mt-3 bg-amber-950/60 rounded-full border border-amber-500/40">
+            <!-- Bulbs populated by JS -->
+        </div>
+    </main>
+
+    <script>
+        /**
+         * BAZAAR HOTLINE — FRUIT MACHINE GAME ENGINE
+         * Single-file retro arcade slot game with custom SVGs, Web Audio SFX,
+         * UK-style Hold & Nudge mechanics, and ₹2.00 Jackpot paytable.
+         */
+
+        // ==========================================
+        // 1. CUSTOM SVG REEL SYMBOLS & PAYTABLE DATA
+        // ==========================================
+        const SYMBOLS = [
+            {
+                id: 'tuktuk',
+                name: 'Tuk Tuk',
+                payoutPaise: 200, // ₹2.00 TOP JACKPOT!
+                payoutLabel: '₹2.00',
+                badgeColor: 'bg-amber-400 text-red-950 border-yellow-200 font-black',
+                isJackpot: true,
+                weight: 2,
+                svg: `
+                <svg viewBox="0 0 64 64" class="w-11 h-11 drop-shadow-sm">
+                    <!-- Canopy Roof -->
+                    <path d="M16 14h26c5 0 9 4 9 9v5H14v-9c0-3 2-5 2-5z" fill="#16a34a" stroke="#14532d" stroke-width="2.5"/>
+                    <!-- Windshield & Frame -->
+                    <path d="M42 15l8 13H41V15h1z" fill="#bae6fd" stroke="#0f172a" stroke-width="2"/>
+                    <!-- Lower Body (Classic Yellow & Green Auto-Rickshaw) -->
+                    <path d="M12 28h40v15c0 2-2 4-4 4H15c-2 0-3-2-3-4V28z" fill="#facc15" stroke="#14532d" stroke-width="2.5"/>
+                    <!-- Passenger Cutout -->
+                    <rect x="18" y="18" width="14" height="10" rx="2" fill="#fef08a" stroke="#14532d" stroke-width="2"/>
+                    <!-- Headlight -->
+                    <circle cx="52" cy="34" r="3" fill="#fef08a" stroke="#14532d" stroke-width="1.5"/>
+                    <!-- Wheels -->
+                    <circle cx="20" cy="48" r="7" fill="#1e293b" stroke="#0f172a" stroke-width="2"/>
+                    <circle cx="20" cy="48" r="3" fill="#cbd5e1"/>
+                    <circle cx="46" cy="48" r="7" fill="#1e293b" stroke="#0f172a" stroke-width="2"/>
+                    <circle cx="46" cy="48" r="3" fill="#cbd5e1"/>
+                </svg>`
+            },
+            {
+                id: 'curry',
+                name: 'Curry',
+                payoutPaise: 100, // ₹1.00
+                payoutLabel: '₹1.00',
+                badgeColor: 'bg-orange-500 text-white border-orange-200 font-bold',
+                isJackpot: false,
+                weight: 3,
+                svg: `
+                <svg viewBox="0 0 64 64" class="w-11 h-11 drop-shadow-sm">
+                    <!-- Rising Steam -->
+                    <path d="M22 18c-2-3 2-6 0-9M32 16c-2-3 2-6 0-9M42 18c-2-3 2-6 0-9" stroke="#f97316" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                    <!-- Curry Gravy Mound -->
+                    <path d="M12 31c0-6 9-10 20-10s20 4 20 10H12z" fill="#ea580c" stroke="#7c2d12" stroke-width="2"/>
+                    <!-- Garnish / Herbs & Paneer -->
+                    <circle cx="26" cy="27" r="2.5" fill="#fef08a"/>
+                    <circle cx="37" cy="26" r="2.5" fill="#fef08a"/>
+                    <path d="M30 24c2-2 5-1 4 2-2 1-4 0-4-2z" fill="#22c55e"/>
+                    <!-- Copper Karahi Bowl -->
+                    <path d="M10 31h44c0 12-9 21-22 21S10 43 10 31z" fill="#d97706" stroke="#451a03" stroke-width="2.5"/>
+                    <!-- Bowl Handles -->
+                    <path d="M10 33H6c-1.5 0-2 3 0 4h5M54 33h4c1.5 0 2 3 0 4h-5" stroke="#451a03" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                </svg>`
+            },
+            {
+                id: 'turban',
+                name: 'Turban',
+                payoutPaise: 50, // 50p
+                payoutLabel: '50p',
+                badgeColor: 'bg-rose-600 text-white border-rose-200 font-bold',
+                isJackpot: false,
+                weight: 4,
+                svg: `
+                <svg viewBox="0 0 64 64" class="w-11 h-11 drop-shadow-sm">
+                    <!-- Main Royal Turban Folds -->
+                    <path d="M12 38c-2-12 6-24 20-24s22 12 20 24c-6 5-34 5-40 0z" fill="#e11d48" stroke="#881337" stroke-width="2.5"/>
+                    <!-- Crisscross Folds -->
+                    <path d="M14 33c10-9 24-14 36-11" stroke="#fda4af" stroke-width="2.5" fill="none"/>
+                    <path d="M50 33c-10-9-24-14-36-11" stroke="#be123c" stroke-width="2.5" fill="none"/>
+                    <path d="M17 41c9-4 21-4 30 0" stroke="#fb7185" stroke-width="2" fill="none"/>
+                    <!-- Golden Kalgi Brooch & Feather -->
+                    <path d="M32 14c0-5 5-8 8-6-1 4-4 6-8 6z" fill="#fde047" stroke="#b45309" stroke-width="1.5"/>
+                    <circle cx="32" cy="21" r="4.5" fill="#facc15" stroke="#92400e" stroke-width="2"/>
+                    <circle cx="32" cy="21" r="1.8" fill="#ef4444"/>
+                </svg>`
+            },
+            {
+                id: 'sari',
+                name: 'Sari',
+                payoutPaise: 30, // 30p
+                payoutLabel: '30p',
+                badgeColor: 'bg-purple-600 text-white border-purple-200 font-bold',
+                isJackpot: false,
+                weight: 4,
+                svg: `
+                <svg viewBox="0 0 64 64" class="w-11 h-11 drop-shadow-sm">
+                    <!-- Draped Silk Sari Fabric -->
+                    <path d="M18 10h24l8 42H14l4-42z" fill="#9333ea" stroke="#4c1d95" stroke-width="2.5" stroke-linejoin="round"/>
+                    <!-- Diagonal Pallu Sash -->
+                    <path d="M18 10l28 24-4 18-26-26 2-16z" fill="#ec4899" stroke="#831843" stroke-width="2"/>
+                    <!-- Golden Zari Border Trim -->
+                    <path d="M15 47h34" stroke="#facc15" stroke-width="4"/>
+                    <path d="M18 13l27 23" stroke="#fde047" stroke-width="2.5" stroke-dasharray="3 2"/>
+                    <!-- Pleat Lines -->
+                    <line x1="25" y1="34" x2="23" y2="51" stroke="#581c87" stroke-width="2"/>
+                    <line x1="32" y1="36" x2="32" y2="51" stroke="#581c87" stroke-width="2"/>
+                    <line x1="39" y1="38" x2="41" y2="51" stroke="#581c87" stroke-width="2"/>
+                </svg>`
+            },
+            {
+                id: 'goat',
+                name: 'Goat',
+                payoutPaise: 20, // 20p
+                payoutLabel: '20p',
+                badgeColor: 'bg-teal-600 text-white border-teal-200 font-bold',
+                isJackpot: false,
+                weight: 5,
+                svg: `
+                <svg viewBox="0 0 64 64" class="w-11 h-11 drop-shadow-sm">
+                    <!-- Curved Horns -->
+                    <path d="M25 20c-3-7-9-9-11-6M39 20c3-7 9-9 11-6" stroke="#92400e" stroke-width="3" stroke-linecap="round" fill="none"/>
+                    <!-- Ears -->
+                    <ellipse cx="17" cy="27" rx="5" ry="2.5" transform="rotate(-20 17 27)" fill="#f5f5f4" stroke="#44403c" stroke-width="2"/>
+                    <ellipse cx="47" cy="27" rx="5" ry="2.5" transform="rotate(20 47 27)" fill="#f5f5f4" stroke="#44403c" stroke-width="2"/>
+                    <!-- Goat Head -->
+                    <path d="M21 22c0-5 22-5 22 0l-3 21c-1 4-15 4-16 0l-3-21z" fill="#fafaf9" stroke="#292524" stroke-width="2.5"/>
+                    <!-- Cute Goatee Beard -->
+                    <path d="M29 45l3 8 3-8" fill="#d6d3d1" stroke="#292524" stroke-width="2" stroke-linejoin="round"/>
+                    <!-- Eyes & Muzzle -->
+                    <circle cx="27" cy="29" r="2" fill="#1c1917"/>
+                    <circle cx="37" cy="29" r="2" fill="#1c1917"/>
+                    <path d="M29 38h6M32 38v3" stroke="#57534e" stroke-width="2" stroke-linecap="round"/>
+                </svg>`
+            },
+            {
+                id: 'trash',
+                name: 'Trash',
+                payoutPaise: 10, // 10p (Money Back!)
+                payoutLabel: '10p',
+                badgeColor: 'bg-slate-600 text-slate-100 border-slate-300 font-bold',
+                isJackpot: false,
+                weight: 5,
+                svg: `
+                <svg viewBox="0 0 64 64" class="w-11 h-11 drop-shadow-sm">
+                    <!-- Lid Handle & Lid -->
+                    <path d="M27 13h10v4H27z" fill="#64748b" stroke="#1e293b" stroke-width="2"/>
+                    <rect x="14" y="17" width="36" height="5" rx="2.5" fill="#94a3b8" stroke="#1e293b" stroke-width="2.5"/>
+                    <!-- Metal Bin Body -->
+                    <path d="M18 22h28l-3 31H21l-3-31z" fill="#cbd5e1" stroke="#1e293b" stroke-width="2.5" stroke-linejoin="round"/>
+                    <!-- Vertical Ribs -->
+                    <line x1="26" y1="26" x2="27" y2="49" stroke="#475569" stroke-width="2.5" stroke-linecap="round"/>
+                    <line x1="32" y1="26" x2="32" y2="49" stroke="#47534e" stroke-width="2.5" stroke-linecap="round"/>
+                    <line x1="38" y1="26" x2="37" y2="49" stroke="#475569" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>`
+            }
+        ];
+
+        // ==========================================
+        // 2. WEB AUDIO SYNTHESIZER (NO EXTERNAL FILES)
+        // ==========================================
+        class ArcadeAudio {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) {
+                        this.ctx = new AudioCtx();
+                    }
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playTone(freq, type = 'square', duration = 0.08, volume = 0.12, delay = 0) {
+                if (this.muted) return;
+                try {
+                    this.init();
+                    if (!this.ctx) return;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + delay);
+                    gain.gain.setValueAtTime(volume, this.ctx.currentTime + delay);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + delay + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + delay);
+                    osc.stop(this.ctx.currentTime + delay + duration);
+                } catch (e) {
+                    // Fail silently if audio blocked
+                }
+            }
+
+            playSpinStart() {
+                this.playTone(330, 'triangle', 0.09, 0.14, 0);
+                this.playTone(440, 'triangle', 0.09, 0.14, 0.06);
+                this.playTone(587, 'triangle', 0.12, 0.14, 0.12);
+            }
+
+            playReelTick() {
+                this.playTone(220 + Math.random() * 80, 'sine', 0.03, 0.05);
+            }
+
+            playReelStop(reelIndex) {
+                const pitches = [261.63, 329.63, 392.00];
+                this.playTone(pitches[reelIndex] || 300, 'square', 0.11, 0.14);
+            }
+
+            playHoldToggle(isHeld) {
+                if (isHeld) {
+                    this.playTone(523.25, 'square', 0.07, 0.12, 0);
+                    this.playTone(659.25, 'square', 0.1, 0.12, 0.06);
+                } else {
+                    this.playTone(440, 'square', 0.08, 0.1, 0);
+                }
+            }
+
+            playNudge() {
+                this.playTone(392, 'sawtooth', 0.06, 0.12, 0);
+                this.playTone(293.66, 'sawtooth', 0.09, 0.12, 0.05);
+            }
+
+            playWin(isJackpot) {
+                if (isJackpot) {
+                    const notes = [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50];
+                    notes.forEach((n, idx) => {
+                        this.playTone(n, 'square', 0.14, 0.16, idx * 0.11);
+                    });
+                } else {
+                    const notes = [440, 554.37, 659.25, 880];
+                    notes.forEach((n, idx) => {
+                        this.playTone(n, 'triangle', 0.12, 0.15, idx * 0.09);
+                    });
+                }
+            }
+
+            playCoinInsert() {
+                this.playTone(987.77, 'sine', 0.08, 0.14, 0);
+                this.playTone(1318.51, 'sine', 0.22, 0.14, 0.07);
+            }
+        }
+
+        const audio = new ArcadeAudio();
+
+        // ==========================================
+        // 3. GAME STATE & CONFIGURATION
+        // ==========================================
+        const SPIN_COST_PAISE = 10; // 10p per spin
+        const CELL_HEIGHT = 76;     // px per symbol row
+        const REEL_LENGTH = 24;     // Symbols per virtual reel strip
+
+        const state = {
+            balancePaise: 100,      // Start with ₹1.00 (100 paise)
+            lastWinPaise: 0,
+            isSpinning: false,
+            reelStrips: [[], [], []],
+            reelIndices: [0, 0, 0], // Index of TOP visible symbol (Center payline is index + 1)
+            holdsAvailable: false,
+            heldReels: [false, false, false],
+            nudgesRemaining: 0,
+            marqueeStep: 0
+        };
+
+        // Call-center parody status messages
+        const CALL_CENTER_QUIPS = [
+            "YOUR CALL IS IMPORTANT TO US — SPIN AGAIN!",
+            "TRANSFERRING TO LEVEL-2 TECH SUPPORT...",
+            "HAVE YOU TRIED TURNING THE REELS OFF & ON?",
+            "PLEASE DO NOT REDEEM... UNTIL YOU HIT ₹2.00!",
+            "HOLD THE LINE FOR SUPERVISOR APPROVAL!",
+            "CONNECTING TO BAZAAR HOTLINE DISPATCH..."
+        ];
+
+        // ==========================================
+        // 4. INITIALIZATION & UI RENDERING
+        // ==========================================
+        function formatRupees(paise) {
+            const rupees = (paise / 100).toFixed(2);
+            return `₹${rupees}`;
+        }
+
+        function buildWeightedPool() {
+            const pool = [];
+            SYMBOLS.forEach(sym => {
+                for (let i = 0; i < sym.weight; i++) {
+                    pool.push(sym);
+                }
+            });
+            return pool;
+        }
+
+        function generateReelStrip() {
+            const pool = buildWeightedPool();
+            const strip = [];
+            for (let i = 0; i < REEL_LENGTH; i++) {
+                const randSym = pool[Math.floor(Math.random() * pool.length)];
+                strip.push(randSym);
+            }
+            // Ensure every symbol appears at least once on every reel
+            SYMBOLS.forEach((sym, idx) => {
+                strip[(idx * 4) % REEL_LENGTH] = sym;
+            });
+            return strip;
+        }
+
+        function renderPaytable() {
+            const grid = document.getElementById('paytable-grid');
+            grid.innerHTML = SYMBOLS.map(sym => `
+                <div class="rounded-xl p-1.5 border ${sym.isJackpot ? 'bg-amber-950/80 border-amber-400 shadow-inner' : 'bg-slate-900/90 border-slate-700'} flex flex-col items-center justify-between">
+                    <div class="scale-75 -my-1">${sym.svg}</div>
+                    <span class="text-[10px] font-semibold text-slate-300 leading-tight">${sym.name}</span>
+                    <span class="mt-0.5 px-1.5 py-0.2 rounded text-[11px] border ${sym.badgeColor}">
+                        ${sym.payoutLabel}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        function renderMarqueeBulbs() {
+            const top = document.getElementById('marquee-top');
+            const bottom = document.getElementById('marquee-bottom');
+            const count = 14;
+            let html = '';
+            for (let i = 0; i < count; i++) {
+                html += `<span class="marquee-bulb" data-bulb="${i}"></span>`;
+            }
+            top.innerHTML = html;
+            bottom.innerHTML = html;
+
+            setInterval(() => {
+                state.marqueeStep = (state.marqueeStep + 1) % 2;
+                const bulbs = document.querySelectorAll('.marquee-bulb');
+                bulbs.forEach((b, idx) => {
+                    const isEven = idx % 2 === state.marqueeStep;
+                    if (isEven) b.classList.add('lit');
+                    else b.classList.remove('lit');
+                });
+            }, 350);
+        }
+
+        function renderReelDOM(reelIdx) {
+            const stripEl = document.getElementById(`strip-${reelIdx}`);
+            const strip = state.reelStrips[reelIdx];
+            // Render strip duplicated twice so wrap-around scrolling is seamless
+            const extended = [...strip, ...strip];
+            stripEl.innerHTML = extended.map(sym => `
+                <div class="reel-cell">
+                    ${sym.svg}
+                    <span class="text-[10px] font-extrabold uppercase tracking-tight text-slate-700 mt-0.5">${sym.name}</span>
+                </div>
+            `).join('');
+            setReelVisualPosition(reelIdx, state.reelIndices[reelIdx], false);
+        }
+
+        function setReelVisualPosition(reelIdx, topIndex, animate = true) {
+            const stripEl = document.getElementById(`strip-${reelIdx}`);
+            const normalizedIdx = ((topIndex % REEL_LENGTH) + REEL_LENGTH) % REEL_LENGTH;
+            const yOffset = -(normalizedIdx * CELL_HEIGHT);
+            stripEl.style.transition = animate ? 'transform 0.18s cubic-bezier(0.22, 1, 0.36, 1)' : 'none';
+            stripEl.style.transform = `translateY(${yOffset}px)`;
+        }
+
+        function getCenterSymbol(reelIdx) {
+            const centerIndex = (state.reelIndices[reelIdx] + 1) % REEL_LENGTH;
+            return state.reelStrips[reelIdx][centerIndex];
+        }
+
+        function updateDisplays(statusText = null) {
+            document.getElementById('balance-display').textContent = formatRupees(state.balancePaise);
+            document.getElementById('paise-sub').textContent = `(${state.balancePaise} paise)`;
+            document.getElementById('win-display').textContent = formatRupees(state.lastWinPaise);
+
+            if (statusText) {
+                document.getElementById('status-message').textContent = statusText;
+            }
+
+            // Update Spin button availability
+            const spinBtn = document.getElementById('spin-btn');
+            spinBtn.disabled = state.isSpinning || state.balancePaise < SPIN_COST_PAISE;
+
+            // Update Top-Up button highlight if low on funds
+            const topupBtn = document.getElementById('topup-btn');
+            if (state.balancePaise < SPIN_COST_PAISE) {
+                topupBtn.classList.add('animate-bounce');
+            } else {
+                topupBtn.classList.remove('animate-bounce');
+            }
+
+            // Update Nudge badge & buttons
+            const nudgeBadge = document.getElementById('nudge-badge');
+            const nudgeCountEl = document.getElementById('nudge-count');
+            if (state.nudgesRemaining > 0 && !state.isSpinning) {
+                nudgeBadge.classList.remove('hidden');
+                nudgeCountEl.textContent = state.nudgesRemaining;
+            } else {
+                nudgeBadge.classList.add('hidden');
+            }
+
+            for (let i = 0; i < 3; i++) {
+                const holdBtn = document.getElementById(`hold-${i}`);
+                const nudgeBtn = document.getElementById(`nudge-${i}`);
+
+                // Hold buttons
+                holdBtn.classList.remove('active-hold', 'held-locked');
+                if (state.isSpinning || !state.holdsAvailable) {
+                    holdBtn.disabled = true;
+                    holdBtn.textContent = `HOLD ${i + 1}`;
+                } else {
+                    holdBtn.disabled = false;
+                    if (state.heldReels[i]) {
+                        holdBtn.classList.add('held-locked');
+                        holdBtn.textContent = `HELD ✓`;
+                    } else {
+                        holdBtn.classList.add('active-hold');
+                        holdBtn.textContent = `HOLD ${i + 1}`;
+                    }
+                }
+
+                // Nudge buttons
+                nudgeBtn.classList.remove('active-nudge');
+                if (state.isSpinning || state.nudgesRemaining <= 0) {
+                    nudgeBtn.disabled = true;
+                } else {
+                    nudgeBtn.disabled = false;
+                    nudgeBtn.classList.add('active-nudge');
+                }
+            }
+        }
+
+        // ==========================================
+        // 5. SPIN, HOLD, NUDGE & WIN EVALUATION LOGIC
+        // ==========================================
+        function spinReels() {
+            if (state.isSpinning) return;
+            if (state.balancePaise < SPIN_COST_PAISE) {
+                updateDisplays("INSUFFICIENT PAISE! TAP '+ ₹1.00 TOP UP'");
+                return;
+            }
+
+            // Hide win overlay if open
+            document.getElementById('win-overlay').classList.add('hidden');
+
+            // Deduct 10 paise spin cost
+            state.balancePaise -= SPIN_COST_PAISE;
+            state.isSpinning = true;
+            state.nudgesRemaining = 0; // Clear unused nudges on new spin
+
+            const wasHoldRound = state.holdsAvailable;
+            const lockedReels = [...state.heldReels];
+
+            // Reset holds after consuming them for this spin
+            state.holdsAvailable = false;
+            state.heldReels = [false, false, false];
+
+            audio.playSpinStart();
+            updateDisplays("DIALING BAZAAR HOTLINE... GOOD LUCK!");
+
+            // Determine target stop indices for non-held reels
+            const targetIndices = [0, 1, 2].map(i => {
+                if (wasHoldRound && lockedReels[i]) {
+                    return state.reelIndices[i];
+                }
+                return Math.floor(Math.random() * REEL_LENGTH);
+            });
+
+            // Staggered spin durations (ms)
+            const stopTimes = [950, 1450, 1950];
+            let completedCount = 0;
+
+            for (let i = 0; i < 3; i++) {
+                if (wasHoldRound && lockedReels[i]) {
+                    // Held reel stays put with a subtle flash
+                    completedCount++;
+                    if (completedCount === 3) finishSpin(targetIndices, true);
+                    continue;
+                }
+
+                const stripEl = document.getElementById(`strip-${i}`);
+                stripEl.classList.add('reel-blur');
+
+                let currentStep = state.reelIndices[i];
+                const tickInterval = setInterval(() => {
+                    currentStep = (currentStep + 1) % REEL_LENGTH;
+                    setReelVisualPosition(i, currentStep, false);
+                    if (i === 2) audio.playReelTick();
+                }, 48);
+
+                setTimeout(() => {
+                    clearInterval(tickInterval);
+                    stripEl.classList.remove('reel-blur');
+                    state.reelIndices[i] = targetIndices[i];
+                    setReelVisualPosition(i, targetIndices[i], true);
+                    audio.playReelStop(i);
+
+                    completedCount++;
+                    if (completedCount === 3) {
+                        finishSpin(targetIndices, wasHoldRound);
+                    }
+                }, stopTimes[i]);
+            }
+        }
+
+        function finishSpin(finalIndices, wasHoldRound) {
+            state.isSpinning = false;
+
+            const won = checkWinCondition();
+            if (!won) {
+                // Offer UK Fruit Machine Hold or Nudge features on non-winning spins
+                const roll = Math.random();
+                if (!wasHoldRound && roll < 0.45) {
+                    state.holdsAvailable = true;
+                    updateDisplays("HOLD AVAILABLE! LOCK REELS & SPIN!");
+                } else if (roll >= 0.45 && roll < 0.78) {
+                    state.nudgesRemaining = Math.random() < 0.4 ? 2 : 1;
+                    updateDisplays(`NUDGE AWARDED! (${state.nudgesRemaining} NUDGE${state.nudgesRemaining > 1 ? 'S' : ''})`);
+                } else {
+                    const quip = CALL_CENTER_QUIPS[Math.floor(Math.random() * CALL_CENTER_QUIPS.length)];
+                    updateDisplays(quip);
+                }
+            }
+        }
+
+        function toggleHold(reelIdx) {
+            if (state.isSpinning || !state.holdsAvailable) return;
+            // Allow holding up to 2 reels so player still spins at least 1
+            const currentlyHeldCount = state.heldReels.filter(Boolean).length;
+            if (!state.heldReels[reelIdx] && currentlyHeldCount >= 2) {
+                updateDisplays("MAX 2 REELS CAN BE HELD AT ONCE!");
+                return;
+            }
+            state.heldReels[reelIdx] = !state.heldReels[reelIdx];
+            audio.playHoldToggle(state.heldReels[reelIdx]);
+            updateDisplays(state.heldReels[reelIdx] ? `REEL ${reelIdx + 1} HELD ON THE LINE!` : `REEL ${reelIdx + 1} RELEASED.`);
+        }
+
+        function nudgeReel(reelIdx) {
+            if (state.isSpinning || state.nudgesRemaining <= 0) return;
+
+            state.nudgesRemaining--;
+            // Nudge moves the reel strip downward by 1 symbol (index decreases by 1)
+            state.reelIndices[reelIdx] = (state.reelIndices[reelIdx] - 1 + REEL_LENGTH) % REEL_LENGTH;
+            setReelVisualPosition(reelIdx, state.reelIndices[reelIdx], true);
+            audio.playNudge();
+
+            const won = checkWinCondition();
+            if (won) {
+                state.nudgesRemaining = 0;
+            } else if (state.nudgesRemaining > 0) {
+                updateDisplays(`NUDGED REEL ${reelIdx + 1}! ${state.nudgesRemaining} NUDGE LEFT.`);
+            } else {
+                updateDisplays("NO NUDGES LEFT — PRESS SPIN!");
+            }
+        }
+
+        function checkWinCondition() {
+            const s0 = getCenterSymbol(0);
+            const s1 = getCenterSymbol(1);
+            const s2 = getCenterSymbol(2);
+
+            if (s0.id === s1.id && s1.id === s2.id) {
+                const prize = s0.payoutPaise;
+                state.balancePaise += prize;
+                state.lastWinPaise = prize;
+                state.holdsAvailable = false;
+                state.heldReels = [false, false, false];
+                state.nudgesRemaining = 0;
+
+                audio.playWin(s0.isJackpot);
+                updateDisplays(`WINNER! 3x ${s0.name.toUpperCase()} PAYS ${s0.payoutLabel}!`);
+
+                // Show Win Overlay Banner
+                const overlay = document.getElementById('win-overlay');
+                const title = document.getElementById('win-title');
+                const subtitle = document.getElementById('win-subtitle');
+
+                title.textContent = s0.isJackpot
+                    ? `JACKPOT! ${s0.payoutLabel}`
+                    : `YOU WON ${s0.payoutLabel}!`;
+                subtitle.textContent = s0.isJackpot
+                    ? `3x ${s0.name} — Grand Prize Credited!`
+                    : `3x ${s0.name} on the Hotline Payline!`;
+
+                overlay.classList.remove('hidden');
+                return true;
+            }
+            return false;
+        }
+
+        function topUpBalance() {
+            if (state.isSpinning) return;
+            state.balancePaise += 100; // Add ₹1.00 (100 paise)
+            audio.playCoinInsert();
+            updateDisplays("₹1.00 (100 PAISE) CREDITED TO YOUR LINE!");
+        }
+
+        // ==========================================
+        // 6. EVENT LISTENERS & BOOTSTRAP
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', () => {
+            renderPaytable();
+            renderMarqueeBulbs();
+
+            for (let i = 0; i < 3; i++) {
+                state.reelStrips[i] = generateReelStrip();
+                state.reelIndices[i] = Math.floor(Math.random() * REEL_LENGTH);
+                renderReelDOM(i);
+            }
+
+            // Button Listeners
+            document.getElementById('spin-btn').addEventListener('click', spinReels);
+            document.getElementById('topup-btn').addEventListener('click', topUpBalance);
+
+            document.getElementById('collect-btn').addEventListener('click', () => {
+                document.getElementById('win-overlay').classList.add('hidden');
+                updateDisplays("PRESS SPIN (10p) FOR ANOTHER CALL!");
+            });
+
+            for (let i = 0; i < 3; i++) {
+                document.getElementById(`hold-${i}`).addEventListener('click', () => toggleHold(i));
+                document.getElementById(`nudge-${i}`).addEventListener('click', () => nudgeReel(i));
+            }
+
+            // Sound Mute Toggle
+            document.getElementById('mute-btn').addEventListener('click', () => {
+                audio.muted = !audio.muted;
+                document.getElementById('icon-sound-on').classList.toggle('hidden', audio.muted);
+                document.getElementById('icon-sound-off').classList.toggle('hidden', !audio.muted);
+            });
+
+            // Keyboard Spacebar Support
+            window.addEventListener('keydown', (e) => {
+                if (e.code === 'Space' && document.activeElement.tagName !== 'BUTTON') {
+                    e.preventDefault();
+                    const overlay = document.getElementById('win-overlay');
+                    if (!overlay.classList.contains('hidden')) {
+                        overlay.classList.add('hidden');
+                        updateDisplays("PRESS SPIN (10p) FOR ANOTHER CALL!");
+                    } else {
+                        spinReels();
+                    }
+                }
+            });
+
+            updateDisplays();
+        });
+    </script>
+</body>
+</html>
